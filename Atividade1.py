@@ -81,7 +81,7 @@ class Mapa:
             plt.show()
                   
 class DiagramaDeBifurcacao:
-    def __init__(self, x, L, nPs, a, mapa, setup_reprocess = {"NT": 10_000, "N":1_000, "tolLs": 1e-15, "nPMax": 100, "tolnP": 1e-7}):
+    def __init__(self, x, L, nPs, a, mapa, setup_reprocess = {"NT": 10_000, "N":1_000, "tolLs": 1e-15, "nPMax": 32, "tolnP": 1e-7}):
         self._ini_a = a
         self._ini_x = x
         self._ini_L = L
@@ -107,6 +107,7 @@ class DiagramaDeBifurcacao:
         self.cid2 = self.fig.canvas.mpl_connect('button_press_event', self.on_click)
         self.show_Lyap = True
         self.show_Bif = True
+        self.show_periodos = False
         self.ax_Bif.callbacks.connect('xlim_changed', self.on_xlim_changed(self.ax_Lyap))
         self.ax_Lyap.callbacks.connect('xlim_changed', self.on_xlim_changed(self.ax_Bif))
         
@@ -128,9 +129,12 @@ class DiagramaDeBifurcacao:
             self.initial_values()
             self.define_state() 
             self.fig.canvas.draw_idle()
+        elif event.key == 'g':
+            self.plotaPeriodos()
+            self.fig.canvas.draw_idle()
     
     def on_click(self, event):
-        if event.dblclick:
+        if event.button == 2:
             print(event.xdata, event.ydata)
     
     def build_default_state(self, ax, y_label, x_label = "", fontsize=20):
@@ -204,6 +208,22 @@ class DiagramaDeBifurcacao:
         self.L = self._ini_L
         self.nPs = self._ini_nPs
     
+    def plotaPeriodos(self):
+        if not self.show_Lyap:
+            return
+        if self.show_periodos:
+            self.define_state()
+            self.show_periodos = False
+            return
+        self.ax_Lyap.cla()
+        #Printa cada periodo com uma cor diferente
+        for i in range(1, np.max(self.nPs)+1):
+            self.ax_Lyap.plot(self.a[self.nPs == i], self.L[self.nPs == i], '.')
+        self.ax_Lyap.set_xlabel('c', fontsize=20)
+        self.ax_Lyap.set_ylabel(r'$\lambda$', fontsize=20)
+        self.ax_Lyap.grid(True)
+        self.show_periodos = True
+    
     def show(self):
         plt.show()  
             
@@ -220,6 +240,7 @@ cubico = {
 A = np.linspace(0,2, 4_000)[1:]
 mapa = Mapa(**cubico)
 x, L, nPs = mapa.LyapunovNps(np.random.rand(), 10_000, 1_000, A)
+
 diagrama = DiagramaDeBifurcacao(x, L, nPs, A, mapa)
 diagrama.show()
 
