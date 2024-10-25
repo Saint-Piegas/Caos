@@ -28,8 +28,20 @@ class Mapa:
                 Xs[i,:] = x
         return Xs.T
     
-    def LyapunovNps(self, x0, NT, N, a, tolLs = 1e-7):
-        pass
+    def LyapunovNps(self, x0, NT, N, a, tolLs = 1e-15, nPMax = 100, tolnP = 1e-7):
+        Xs = self.run(x0, NT, N, a).T
+        Ls = []
+        nPs = []
+        for xj, aj in zip( Xs.T, a):
+            nPj = self.contadorPeriodo(xj, nPMax=nPMax, tolerancia=tolnP)
+            if nPj>0:
+                dfdx_j = abs( self.dfdx(xj[-nPj:],aj) )
+            else:
+                dfdx_j = abs( self.dfdx(xj,aj) )
+            dfdx_j[dfdx_j<tolLs] = tolLs
+            Ls.append( np.mean( np.log( dfdx_j ) ) )
+            nPs.append( nPj )
+        return Xs.T, np.array(Ls), np.array(nPs)
     
     def cobweb(self, nit, x0, a, x_axis = np.linspace(0, 1, 1000), name_save = "Cobweb.png"):
         for ai in a:
@@ -69,19 +81,22 @@ class Mapa:
             plt.show()
                   
 class DiagramaDeBifurcacao:
-    def __init__(self, x, L, a, mapa, setup_reprocess = {"NT": 10_000, "N":1_000}):
+    def __init__(self, x, L, nPs, a, mapa, setup_reprocess = {"NT": 10_000, "N":1_000, "tolLs": 1e-15, "nPMax": 100, "tolnP": 1e-7}):
         self._ini_a = a
         self._ini_x = x
         self._ini_L = L
+        self._ini_nPs = nPs
         self.a = a
         self.x = x
         self.L = L
+        self.nPs = nPs
         self.mapa = mapa
         self.setup_reprocess = setup_reprocess
+        self.fig = plt.figure(figsize=(10,5))
         self.define_state()
         
     def define_state(self):
-        self.fig = plt.figure(figsize=(10,5))
+        self.fig.clear()
         self.ax_Bif = self.fig.add_subplot(211)
         self.ax_Lyap = self.fig.add_subplot(212)
         self.build_default_state(self.ax_Bif, y_label = "x")
@@ -107,14 +122,12 @@ class DiagramaDeBifurcacao:
             self.fig.canvas.draw_idle()
         elif event.key == 'a':
             self.reprocess()
-            plt.close(self.fig)
             self.define_state()
-            plt.show()
+            self.fig.canvas.draw_idle()
         elif event.key == 'd':
             self.initial_values()
-            plt.close(self.fig)
             self.define_state() 
-            plt.show()
+            self.fig.canvas.draw_idle()
     
     def on_click(self, event):
         if event.dblclick:
@@ -178,10 +191,10 @@ class DiagramaDeBifurcacao:
         xlim = self.ax_Bif.get_xlim()
         a = np.linspace(xlim[0], xlim[1], len(self.a))
         print("Iterando Mapa")
-        x,L = self.mapa.run(np.random.rand(), **self.setup_reprocess, a = a)
+        x,L,nPs = self.mapa.LyapunovNps(np.random.rand(), **self.setup_reprocess, a = a)
         print("Finalizado")
         self.a = a  
-        self.a = a
+        self.nPs = nPs
         self.x = x
         self.L = L
     
@@ -189,6 +202,7 @@ class DiagramaDeBifurcacao:
         self.a = self._ini_a
         self.x = self._ini_x
         self.L = self._ini_L
+        self.nPs = self._ini_nPs
     
     def show(self):
         plt.show()  
@@ -205,26 +219,26 @@ cubico = {
 
 A = np.linspace(0,2, 4_000)[1:]
 mapa = Mapa(**cubico)
-# x,L = mapa.run(np.random.rand(), 10_000, 1_000, a = A)
-# diagrama = DiagramaDeBifurcacao(x, L, A, mapa)
-# diagrama.show()
+x, L, nPs = mapa.LyapunovNps(np.random.rand(), 10_000, 1_000, A)
+diagrama = DiagramaDeBifurcacao(x, L, nPs, A, mapa)
+diagrama.show()
 
 
-xef = mapa.run(np.random.rand(), 100, 1, 0.5)[0]
+# xef = mapa.run(np.random.rand(), 100, 1, 0.5)[0]
 
-serieTemporal = {
-    'NT': 0,
-    'N': 100,
-    'a': 1.8,
-    'x0': xef + np.array([0, 1e-15, -1e-15]),
-}
+# serieTemporal = {
+#     'NT': 0,
+#     'N': 100,
+#     'a': 1.8,
+#     'x0': xef + np.array([0, 1e-15, -1e-15]),
+# }
 
-cobweb = {
-    'nit': 100,
-    'x0': mapa.run(np.random.rand(), 100_000, 1, 1.8615)[-1],
-    'a': [1.1865],
-    'name_save': 'Cobweb.png',
-    'x_axis': np.linspace(-1, 1, 1000),
-}
+# cobweb = {
+#     'nit': 100,
+#     'x0': mapa.run(np.random.rand(), 100_000, 1, 1.8615)[-1],
+#     'a': [1.1865],
+#     'name_save': 'Cobweb.png',
+#     'x_axis': np.linspace(-1, 1, 1000),
+# }
 
-mapa.serieTemporal(**serieTemporal)
+# mapa.serieTemporal(**serieTemporal)
