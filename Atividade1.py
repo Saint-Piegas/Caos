@@ -5,23 +5,36 @@ class Mapa:
     def __init__(self, f, dfdx):
         self.f = f
         self.dfdx = dfdx
+        
+    def contadorPeriodo(self, x, nPMax=np.inf, tolerancia=1e-7, naoPeriodico=0):
+        x = np.array(x)[::-1]
+        nPMaxEf = int( min( nPMax, len(x)/2 ) )
+        dx0 = x[:nPMaxEf]-x[0]
+        candidatos = np.flatnonzero( np.abs(dx0)<tolerancia )[1:]
+        while ( len(candidatos)>0 ):
+            pP = candidatos[0]
+            candidatos = candidatos[1:]
+            if np.sum( np.abs(x[:pP]-x[pP:2*pP])>tolerancia )==0:
+                return pP
+        return naoPeriodico
     
     def run(self, x0, NT, N, a):
         tamanho_a = len(a) if isinstance(a, (list, np.ndarray)) else 1
-        x = np.zeros((N+NT+1, tamanho_a))
-        L = np.zeros(tamanho_a)
-        x[0,:] = x0
-        for i in range(N+NT):
-            x[i+1, :] = self.f(x[i], a)
-            if i - NT >= 0:
-                L += 1/N * np.log(np.abs(self.dfdx(x[i], a)))
-        x = x[NT+1:, :]
-        return x.T, L
+        Xs = np.zeros( (N, tamanho_a) )
+        x = x0
+        for i in range( -NT, N ):
+            x = self.f(x,a)
+            if i>=0:
+                Xs[i,:] = x
+        return Xs.T
+    
+    def LyapunovNps(self, x0, NT, N, a, tolLs = 1e-7):
+        pass
     
     def cobweb(self, nit, x0, a, x_axis = np.linspace(0, 1, 1000), name_save = "Cobweb.png"):
         for ai in a:
             fig = plt.figure(figsize=(10,10))
-            x = self.run(x0, 0, nit, ai)[0]
+            x = self.run(x0, 0, nit, ai)
             #Definições básicas do gráfico
             ax = fig.add_subplot(111)
             ax.grid(True)
@@ -33,7 +46,7 @@ class Mapa:
             #Plota a reta y = x
             ax.plot(x_axis, x_axis, 'b')
             #Plota primeiro ponto
-            ax.plot(np.ones(100)*x0, np.linspace(0, x[0,0], 100), 'g', linestyle='--')
+            ax.plot(np.ones(100)*x0, np.linspace(x0, x[0,0], 100), 'g', linestyle='--')
             ax.plot(np.linspace(x0, x[0,0], 100), np.ones(100)*x[0,0], 'g', linestyle='--')
             for i in range(1,nit):
                 ax.plot(np.ones(100)*x[0, i-1], np.linspace(x[0, i-1], x[0, i], 100), 'g', linestyle='--')
@@ -51,7 +64,7 @@ class Mapa:
             ax.set_xlabel('$x_i$', fontsize=20)
             ax.set_title(f'Série temporal para c = {ai}', fontsize=24)
             for i, x0i in enumerate(x0):
-                x = self.run(x0i, NT, N, ai)[0]
+                x = self.run(x0i, NT, N, ai)
                 ax.plot(range(N), x[0:,].reshape(-1), lynestyles[i], label=f'$x_0 = {x0i}$')
             plt.show()
                   
@@ -192,17 +205,26 @@ cubico = {
 
 A = np.linspace(0,2, 4_000)[1:]
 mapa = Mapa(**cubico)
-x,L = mapa.run(np.random.rand(), 10_000, 1_000, a = A)
-diagrama = DiagramaDeBifurcacao(x, L, A, mapa)
-diagrama.show()
+# x,L = mapa.run(np.random.rand(), 10_000, 1_000, a = A)
+# diagrama = DiagramaDeBifurcacao(x, L, A, mapa)
+# diagrama.show()
 
 
-# xef = mapa.run(np.random.rand(), 100, 1, 0.5)[0][0]
+xef = mapa.run(np.random.rand(), 100, 1, 0.5)[0]
 
-# serieTemporal = {
-#     'NT': 0,
-#     'N': 100,
-#     'a': 1.8,
-#     'x0': xef + np.array([0, 1e-15, -1e-15]),
-# }
-# mapa.serieTemporal(**serieTemporal)
+serieTemporal = {
+    'NT': 0,
+    'N': 100,
+    'a': 1.8,
+    'x0': xef + np.array([0, 1e-15, -1e-15]),
+}
+
+cobweb = {
+    'nit': 100,
+    'x0': mapa.run(np.random.rand(), 100_000, 1, 1.8615)[-1],
+    'a': [1.1865],
+    'name_save': 'Cobweb.png',
+    'x_axis': np.linspace(-1, 1, 1000),
+}
+
+mapa.serieTemporal(**serieTemporal)
