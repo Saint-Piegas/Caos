@@ -78,7 +78,8 @@ class Mapa:
             for i, x0i in enumerate(x0):
                 x = self.run(x0i, NT, N, ai)
                 ax.plot(range(N), x[0:,].reshape(-1), lynestyles[i], label=legenda[i])
-            ax.legend(loc = 'lower left', fontsize=20)
+            if not legenda == ['']*len(x0):
+                ax.legend(loc = 'lower left', fontsize=20)
             plt.show()
                   
 class DiagramaDeBifurcacao:
@@ -229,11 +230,6 @@ class DiagramaDeBifurcacao:
     def show(self):
         plt.show()  
             
-logistico = {
-    'f': lambda x, a: a*x*(1-x),
-    'dfdx': lambda x, a: a*(1-2*x),
-}
-
 cubico = {
     'f': lambda x, a: 1 - a*np.abs(x)**3,
     'dfdx': lambda x, a: -3*a*x**2,
@@ -241,14 +237,15 @@ cubico = {
 
 mapa = Mapa(**cubico)
 
-# # 1 - a) Código usado para a geração das figuras 1, 2, 3 e 5
+# 1 - a, b e c) Código usado para a geração das figuras 1, 2, 3, 5, 10, 11, 12, 13, 14, 17 e 18
+#As difeentes figuras foram feitas dando zoom nas regiões de interesse e reprocessando o mapa (apertando 'a' no teclado)
 # A = np.linspace(0,2, 10_000)[1:-1]
 # x, L, nPs = mapa.LyapunovNps(np.random.rand(), 100_000, 1_000, A)
 
 # diagrama = DiagramaDeBifurcacao(x, L, nPs, A, mapa, setup_reprocess={"NT": 100_000, "N":1_000, "tolLs": 1e-15, "nPMax": 32, "tolnP": 1e-7})
 # diagrama.show()
 
-# # 1 -a) Código usado para a geração das figuras 4 e 6
+# 1 -a) Código usado para a geração das figuras 4 e 6
 # xef = mapa.run(np.random.rand(), 100, 1, 0.5).T[0]
 
 # delta0 = 1e-10
@@ -263,15 +260,38 @@ mapa = Mapa(**cubico)
 
 # mapa.serieTemporal(**serieTemporal)
 
-#1-a) Código usado para a geração das figuras 7, 8 e 9
-cobweb = lambda a:{
+# #1-a) Código usado para a geração das figuras 7, 8 e 9
+# cobweb = lambda a:{
+#     'nit': 15,
+#     'a': [a],
+#     'x0': mapa.run(np.random.rand(), 100_000, 1, a).T[0],
+#     'name_save': 'Cobweb.png',
+#     'x_axis': np.linspace(-1, 1, 1000),
+# }
+
+# As = [0.65, 1.35, 1.89]
+# for a in As:
+#     mapa.cobweb(**cobweb(a))
+
+# 1-c) Código usado para a geração das figuras 15
+serieTemporal2 = {
+    'NT': 10_000,
+    'N': 100,
+    'a': [1.84, 1.85, 1.861], 
+    'x0': [np.random.rand()], 
+    'legenda': ['']
+}
+
+mapa.serieTemporal(**serieTemporal2)
+
+# 1-c) Código usado para a geração das figuras 16
+As = [1.84, 1.85, 1.861]
+cobweb2 = lambda a: {
     'nit': 15,
     'a': [a],
     'x0': mapa.run(np.random.rand(), 100_000, 1, a).T[0],
-    'name_save': 'Cobweb.png',
-    'x_axis': np.linspace(-1, 1, 1000),
+    'name_save': 'Cobweb2.png',
+    'x_axis': np.linspace(-1, 1, 1000),   
 }
-
-As = [0.65, 1.35, 1.89]
-for a in As:
-    mapa.cobweb(**cobweb(a))
+for ai in As:
+    mapa.cobweb(**cobweb2(ai))
