@@ -66,18 +66,19 @@ class Mapa:
             plt.savefig(f'a={ai}_{name_save}')
             plt.close()
                 
-    def serieTemporal(self, x0, NT, N, a, lynestyles = ['.-', '.:', '.:']):
+    def serieTemporal(self, x0, NT, N, a, lynestyles = ['.-', '.:', '.:'], legenda = []):
         a = a if isinstance(a, (list, np.ndarray)) else [a]
         for ai in a:
             fig = plt.figure(figsize=(20,10))
             ax = fig.add_subplot(111)
             ax.grid(True)
-            ax.set_ylabel('i', fontsize=20)
-            ax.set_xlabel('$x_i$', fontsize=20)
+            ax.set_ylabel('$x_i$', fontsize=20)
+            ax.set_xlabel('$i$', fontsize=20)
             ax.set_title(f'Série temporal para c = {ai}', fontsize=24)
             for i, x0i in enumerate(x0):
                 x = self.run(x0i, NT, N, ai)
-                ax.plot(range(N), x[0:,].reshape(-1), lynestyles[i], label=f'$x_0 = {x0i}$')
+                ax.plot(range(N), x[0:,].reshape(-1), lynestyles[i], label=legenda[i])
+            ax.legend(loc = 'lower left', fontsize=20)
             plt.show()
                   
 class DiagramaDeBifurcacao:
@@ -92,7 +93,7 @@ class DiagramaDeBifurcacao:
         self.nPs = nPs
         self.mapa = mapa
         self.setup_reprocess = setup_reprocess
-        self.fig = plt.figure(figsize=(10,5))
+        self.fig = plt.figure(figsize=(20,10))
         self.define_state()
         
     def define_state(self):
@@ -108,6 +109,7 @@ class DiagramaDeBifurcacao:
         self.show_Lyap = True
         self.show_Bif = True
         self.show_periodos = False
+        self.ax_Bif.set_title("Diagrama de Bifurcação", fontsize=24)
         self.ax_Bif.callbacks.connect('xlim_changed', self.on_xlim_changed(self.ax_Lyap))
         self.ax_Lyap.callbacks.connect('xlim_changed', self.on_xlim_changed(self.ax_Bif))
         
@@ -172,7 +174,7 @@ class DiagramaDeBifurcacao:
         self.ax_Lyap.set_visible(True)
         self.ax_Bif.set_position([0.1, 0.5, 0.8, 0.4])
         self.ax_Lyap.set_position([0.1, 0.1, 0.8, 0.4])
-        self.ax_Bif.set_title('')
+        self.ax_Bif.set_title('Diagrama de Bifurcação', fontsize=24)
         self.ax_Lyap.set_title('')
         self.ax_Lyap.set_xlabel('c', fontsize=20)
         self.ax_Bif.set_xlabel('')
@@ -237,29 +239,39 @@ cubico = {
     'dfdx': lambda x, a: -3*a*x**2,
 }
 
-A = np.linspace(0,2, 4_000)[1:]
 mapa = Mapa(**cubico)
-x, L, nPs = mapa.LyapunovNps(np.random.rand(), 10_000, 1_000, A)
 
-diagrama = DiagramaDeBifurcacao(x, L, nPs, A, mapa)
-diagrama.show()
+# # 1 - a) Código usado para a geração das figuras 1, 2, 3 e 5
+# A = np.linspace(0,2, 10_000)[1:-1]
+# x, L, nPs = mapa.LyapunovNps(np.random.rand(), 100_000, 1_000, A)
 
+# diagrama = DiagramaDeBifurcacao(x, L, nPs, A, mapa, setup_reprocess={"NT": 100_000, "N":1_000, "tolLs": 1e-15, "nPMax": 32, "tolnP": 1e-7})
+# diagrama.show()
 
-# xef = mapa.run(np.random.rand(), 100, 1, 0.5)[0]
+# # 1 -a) Código usado para a geração das figuras 4 e 6
+# xef = mapa.run(np.random.rand(), 100, 1, 0.5).T[0]
+
+# delta0 = 1e-10
 
 # serieTemporal = {
 #     'NT': 0,
 #     'N': 100,
-#     'a': 1.8,
-#     'x0': xef + np.array([0, 1e-15, -1e-15]),
-# }
-
-# cobweb = {
-#     'nit': 100,
-#     'x0': mapa.run(np.random.rand(), 100_000, 1, 1.8615)[-1],
-#     'a': [1.1865],
-#     'name_save': 'Cobweb.png',
-#     'x_axis': np.linspace(-1, 1, 1000),
+#     'a': [0.65, 1.89],
+#     'x0': xef + np.array([0, delta0, -delta0]),
+#     'legenda': ['$x_0$', '$x_0 + 10^{-10}$', '$x_0 - 10^{-10}$'],
 # }
 
 # mapa.serieTemporal(**serieTemporal)
+
+#1-a) Código usado para a geração das figuras 7, 8 e 9
+cobweb = lambda a:{
+    'nit': 15,
+    'a': [a],
+    'x0': mapa.run(np.random.rand(), 100_000, 1, a).T[0],
+    'name_save': 'Cobweb.png',
+    'x_axis': np.linspace(-1, 1, 1000),
+}
+
+As = [0.65, 1.35, 1.89]
+for a in As:
+    mapa.cobweb(**cobweb(a))
