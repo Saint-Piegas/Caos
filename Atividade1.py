@@ -295,3 +295,21 @@ cobweb2 = lambda a: {
 }
 for ai in As:
     mapa.cobweb(**cobweb2(ai))
+    
+'''
+2-)
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+Coluna 1 & Coluna 2 & Coluna 3 & Coluna 4 \\ \hline
+1.00000 & 0.59258 & -       & -       \\ \hline
+2.00000 & 1.34085 & 0.74827 & -       \\ \hline
+3.00000 & 1.49108 & 0.15023 & 4.98083 \\ \hline
+4.00000 & 1.51680 & 0.02572 & 5.84098 \\ \hline
+5.00000 & 1.52104 & 0.00424 & 6.06604 \\ \hline
+\end{tabular}
+\caption{Título da Tabela}
+\label{tab:exemplo}
+\end{table}
+'''
